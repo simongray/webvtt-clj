@@ -2,8 +2,8 @@
   "The characters that the algorithms of WebVTT look for, and the runs of
   text between them.
 
-  The primitive hints and the code units keep the scanning of the JVM
-  unboxed, which dev/dk/simongray/webvtt/bench.cljc showed to matter.")
+  Primitive hints and code units keep the scanning unboxed on the JVM,
+  which dev/dk/simongray/webvtt/bench.cljc showed to matter.")
 
 (defn length
   "The length of the text `s`."

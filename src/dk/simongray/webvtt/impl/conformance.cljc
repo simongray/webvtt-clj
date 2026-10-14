@@ -1,15 +1,16 @@
 (ns ^:no-doc dk.simongray.webvtt.impl.conformance
-  "Whether a WebVTT file conforms to the syntax of section 4: the errors in
-  the blocks that the parser collects, which it forgives, and in the rules
-  that it doesn't check, e.g. that cues are in order.
+  "Whether a WebVTT file conforms to the syntax of section 4: both the
+  errors in its blocks that the parser forgives, and the rules that the
+  parser doesn't check, e.g. that cues are in order.
 
   An error is a map of its :type, a keyword named after the rule it breaks,
-  and of the :line and the :column where it is, counted from 1 in UTF-16
-  code units. The types are in error-types.
+  and the :line and :column where it is, counted from 1 in UTF-16 code
+  units. The types are in error-types.
 
-  The kind of track picks the rules for the text of cues, by the kinds of
-  HTML's track element: cue text for :subtitles, :captions and
-  :descriptions, chapter titles for :chapters, and anything for :metadata."
+  The kind of track (one of the kinds of HTML's track element) sets the
+  rules for the text of cues: cue text for :subtitles, :captions and
+  :descriptions, chapter titles for :chapters, and any text for
+  :metadata."
   #?(:cljs (:require-macros [dk.simongray.webvtt.impl.conformance :refer [constant-map]]))
   (:require [clojure.string :as str]
             [dk.simongray.langtag.registry :as registry]
@@ -32,7 +33,8 @@
        m)))
 
 (def error-types
-  "Each type of error, with the section of the rule it breaks."
+  "Each type of error, with the section of the spec that it breaks and
+  what's wrong."
   (constant-map
    {:signature                   "4.1, the file doesn't start with WEBVTT"
     :header                      "4.1, the WEBVTT line isn't followed by a blank line"
@@ -40,11 +42,11 @@
     :block-without-timings       "4.1, a block is neither a cue, a region, a style sheet nor a comment"
     :style-after-cue             "4.1, a STYLE block comes after a cue"
     :region-after-cue            "4.1, a REGION block comes after a cue"
-    :timings                     "4.1, a cue's timings don't parse, so the cue is left out"
+    :timings                     "4.1, a cue's timings don't parse, so the parser leaves the cue out"
     :timestamp                   "4.1, a timestamp isn't written as the syntax says"
-    :timing-whitespace           "4.1, the timings have whitespace other than spaces and tabs where they need them"
+    :timing-whitespace           "4.1, the timings lack a space or a tab where they need one, or have other whitespace"
     :end-not-after-start         "4.1, a cue ends at or before its start"
-    :cues-out-of-order           "4.1, a cue starts before a cue before it"
+    :cues-out-of-order           "4.1, a cue starts before an earlier cue does"
     :duplicate-cue-id            "4.1, two cues have the same id"
     :invalid-setting             "4.4, a cue setting is unknown or its value is invalid"
     :duplicate-setting           "4.4, a cue has a setting twice"
@@ -54,19 +56,19 @@
     :duplicate-region-setting    "4.3, a region has a setting twice"
     :region-without-id           "4.3, a region has no id"
     :duplicate-region-id         "4.3, two regions have the same id"
-    :unknown-tag                 "4.2.2, a tag isn't one of cue text"
+    :unknown-tag                 "4.2.2, a tag isn't a tag of cue text"
     :rt-outside-ruby             "4.2.2, an rt tag isn't in a ruby"
     :ruby-without-rt             "4.2.2, a ruby has no rt"
     :unclosed-tag                "4.2.2, a tag has no end tag, which only a lone v may leave out"
     :unexpected-end-tag          "4.2.2, an end tag ends no open tag"
-    :invalid-class               "4.2.2, a class name is empty, or has & or <"
+    :invalid-class               "4.2.2, a class name is empty or has & or <"
     :missing-annotation          "4.2.2, a v or a lang tag has no annotation"
     :annotation-not-allowed      "4.2.2, a tag other than v or lang has an annotation"
     :invalid-language-tag        "4.2.2, the annotation of a lang tag isn't a valid BCP 47 language tag"
     :invalid-character-reference "4.2.2, an & doesn't start a valid character reference"
     :invalid-timestamp           "4.2.2, an inline timestamp isn't a timestamp"
-    :timestamp-out-of-order      "4.2.2, an inline timestamp isn't after the start of the cue and those before it"
-    :timestamp-after-end         "4.2.2, an inline timestamp isn't before the end of the cue"
+    :timestamp-out-of-order      "4.2.2, an inline timestamp isn't after the cue's start and the timestamps before it"
+    :timestamp-after-end         "4.2.2, an inline timestamp isn't before the cue's end"
     :markup-in-chapter-title     "4.2.3, the title of a chapter has a tag"
     :overlapping-chapters        "4.5.1, two chapters overlap without one holding the other"}))
 
@@ -103,8 +105,8 @@
       acc)))
 
 (defn duplicates
-  "The tokens of the `named` pairs of an index and a name whose name came
-  before, as their indices."
+  "The indices in the `named` pairs of an index and a name whose name came
+  before."
   [named]
   (second (reduce (fn [[seen acc] [at name]]
                     (if (contains? seen name)
@@ -134,10 +136,13 @@
   (boolean (and (< i j) (re-matches #"[ \t]+" (subs line i j)))))
 
 (defn timing-parts
-  "Where the parts of the cue timings `line`, which parses, start and end,
-  as a map of :start and :start-end, the start time, :arrow, the index of
-  the arrow, :end and :end-end, the end time, and so where its settings
-  start."
+  "Where the parts of the cue timings `line`, which parses, are, as a map
+  of:
+
+  - :start and :start-end, where the start time starts and ends
+  - :arrow, the index of the arrow
+  - :end and :end-end, where the end time starts and ends, which is where
+    the settings start"
   [line]
   (let [start     (chars/skip-whitespace line 0)
         [_ i]     (settings/timestamp line start)
@@ -265,7 +270,7 @@
 
 (defn start-tag-errors
   "The errors of the start tag `token`, at `at` in the input, apart from
-  where it is."
+  those of where it is, e.g. an rt outside a ruby."
   [{:keys [name classes annotation raw]} at]
   (let [known?        (contains? tag-names name)
         annotated?    (contains? #{"v" "lang"} name)
@@ -371,7 +376,7 @@
 ;; WebVTT, section 4.2.3, chapter title text
 (defn chapter-title-errors
   "The errors of the chapter title `s`, which starts at `at` in the input:
-  any tag, and invalid character references."
+  any tag and any invalid character reference."
   [s at]
   (mapcat (fn [{:keys [type offset raw]}]
             (if (= :string type)
@@ -424,7 +429,8 @@
        [(error :region-without-id at)]))))
 
 (defn region-id-errors
-  "The errors of the region `blocks` whose ids came before."
+  "The errors of the region `blocks` with an id that a region before them
+  already has."
   [blocks]
   (map #(error :duplicate-region-id %)
        (duplicates (for [{[[at]] :lines :keys [value]} blocks
@@ -453,9 +459,9 @@
       :else                                 [(error :block-without-timings at)])))
 
 (defn cue-errors
-  "The errors of the cue `block`, where `seen` holds the :ids and the
-  :latest start of the cues before it, and the `region-ids` are those of
-  the file's regions."
+  "The errors of the cue `block` for the `kind` of track, where `seen`
+  holds the :ids and the :latest start of the cues before it, and the
+  `region-ids` are those of the file's regions."
   [{:keys [value lines arrow]} seen region-ids kind]
   (let [[at line]   (nth lines arrow)
         [id-at id]  (when (= 1 arrow) (first lines))

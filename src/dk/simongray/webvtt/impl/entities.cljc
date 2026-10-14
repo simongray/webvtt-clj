@@ -3,9 +3,10 @@
   decode (WebVTT, section 6.4, and HTML, sections 13.2.5.77 to 13.2.5.84).
   WebVTT never reads them as part of an attribute.
 
-  The named references are the table of section 13.5 of the HTML
-  Standard, in resources, which dev/dk/simongray/webvtt/tables.clj makes
-  from WHATWG's entities.json (under CC BY 4.0). It's read on first use."
+  The named references are those of the table in section 13.5 of the HTML
+  Standard. The table in resources comes from WHATWG's entities.json
+  (under CC BY 4.0), by dev/dk/simongray/webvtt/tables.clj, and this
+  namespace reads it when it's first needed."
   #?(:cljs (:require-macros [dk.simongray.webvtt.impl.entities :refer [table-text]]))
   (:require [clojure.string :as str]
             #?(:clj [clojure.java.io :as io])
@@ -28,9 +29,9 @@
   #?(:clj (Long/parseLong s 36) :cljs (js/parseInt s 36)))
 
 (defn group
-  "The first code point of a `line` of the table, which follows a line
-  whose first code point is `previous`, and the names of its group with
-  the characters that they stand for, as a pair (see
+  "The first code point of a `line` of the table, and the names of its
+  group with the characters they stand for, as a pair. The `previous`
+  code point is the first of the line before (see
   dk.simongray.webvtt.tables for the format)."
   [previous line]
   (let [[codes & names] (str/split line #" ")
@@ -113,9 +114,9 @@
    0x9C 0x0153 0x9E 0x017E 0x9F 0x0178})
 
 (defn referenced
-  "The character of a numeric reference to the code point `n`, as the
-  numeric character reference end state of HTML checks it (section
-  13.2.5.84)."
+  "The character that a numeric reference to the code point `n` stands
+  for, after the checks of HTML's numeric character reference end state
+  (section 13.2.5.84)."
   [n]
   (chars/code-point->string
    (cond
@@ -140,8 +141,9 @@
 ;; HTML, section 13.2.5.77
 (defn character-reference
   "The characters of the character reference that starts at `i` in the
-  text `s`, just after its ampersand, and the index past it, as a pair,
-  or nil when there's none, where the ampersand stays text."
+  text `s`, just after its ampersand, and the index past it, as a pair.
+  It's nil when there's no reference, and the ampersand then stays
+  text."
   [s i]
   (let [c (chars/char-at s i)]
     (cond

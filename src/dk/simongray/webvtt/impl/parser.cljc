@@ -17,9 +17,9 @@
 
 ;; WebVTT, section 6.1, step 1
 (defn input
-  "The text `s` as the parser reads it: without a leading BOM, which UTF-8
-  decoding removes, with each NUL replaced by U+FFFD, and with every line
-  break as a line feed."
+  "The text `s` as the parser reads it: without a leading BOM (as UTF-8
+  decoding removes it), with each NUL replaced by U+FFFD and with every
+  line break as a line feed."
   [s]
   (let [s (cond-> s (= 0xFEFF (some-> (chars/char-at s 0) chars/code)) (subs 1))]
     (cond-> s
@@ -59,9 +59,9 @@
       (kind? "REGION") :region)))
 
 (defn value
-  "The kind of block and its value that the `state` of a block and its
-  `buffer` make, as a pair: a cue, a style sheet or a region, or nil. A
-  cue without text has no :text, as text is its default."
+  "The kind and the value of a block, from its `state` and its `buffer`,
+  as a pair: a cue, a style sheet or a region, or nil. A cue without text
+  has no :text, since empty text is the default."
   [{:keys [cue kind]} buffer]
   (cond
     cue              [:cue (cond-> cue (not= "" buffer) (assoc :text buffer))]
@@ -70,9 +70,9 @@
     :else            nil))
 
 (defn finish
-  "The block of the `input` that collect-block returns for the `state` of
-  a block, whose buffer and lines are in the `bounds`, and which `ended`
-  so, and the index `k` where the next block may start, as a pair."
+  "The block that collect-block returns, and the index `k` where the next
+  block may start, as a pair. The block comes from the `input`, its
+  `state`, the `bounds` of its buffer and its lines, and how it `ended`."
   [input state {:keys [from to start line-count]} ended k]
   (let [[kind v] (value state (subs input from to))]
     [{:kind kind :value v :start start :line-count line-count :arrow (:arrow state) :ended ended}
@@ -92,8 +92,8 @@
   - :value, the cue, the text of the style sheet or the region
   - :start, the index of its first line in the `input`, and :line-count,
     the number of its lines
-  - :arrow, the index among its lines of its cue timings, or of a line with
-    an arrow that failed to be them
+  - :arrow, the index of its cue timings among its lines, or of a line
+    with an arrow that didn't parse as timings
   - :ended, how it ended: :blank, :arrow (before a line with an arrow, which
     starts the next block) or :eof
 
@@ -164,8 +164,8 @@
     file))
 
 (defn header-end
-  "The index in the `input` after its header, and the header block that
-  follows the line with the signature, or nil when none does, as a pair
+  "The index in the `input` just after its header, and the header block
+  after the line of the signature (or nil when there's none), as a pair
   (section 6.1, steps 7 to 10)."
   [input]
   (let [n (count input)
@@ -184,10 +184,13 @@
     (cond-> file (not= "WEBVTT" header) (assoc :header header))))
 
 (defn scan
-  "The `input` of the text `s` as the parser reads it, its file, and the
-  blocks and the header block that collect-block returns for it, as a map
-  of :input, :file, :blocks and :header-block, or nil when it doesn't
-  start with the signature of a WebVTT file (section 6.1)."
+  "The parse of the text `s` as a map, or nil when `s` doesn't start with
+  the signature of a WebVTT file (section 6.1). The map holds:
+
+  - :input, the text as the parser reads it
+  - :file, the file
+  - :blocks and :header-block, the blocks that collect-block returns for
+    the input"
   [s]
   (let [input (input s)]
     (when (signature? input)

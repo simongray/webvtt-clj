@@ -3,24 +3,24 @@ webvtt-clj
 
 [![Clojars Project](https://img.shields.io/clojars/v/dk.simongray/webvtt-clj.svg)](https://clojars.org/dk.simongray/webvtt-clj)
 
-This library implements [WebVTT](https://www.w3.org/TR/webvtt1/), the
-format of captions, subtitles and chapters on the web, in Clojure and
-ClojureScript. It parses a file the way a browser parses a `<track>`, and
-writes one back.
+This library implements [WebVTT](https://www.w3.org/TR/webvtt1/) in
+Clojure and ClojureScript. WebVTT is the format of captions, subtitles and
+chapters on the web, and the library parses a file just as a browser does
+for a `<track>` element. It writes files too.
 
-- **The browser's parser.** It follows the parsing algorithm of the spec
-  step by step and passes the WebVTT tests of
+- **The browser's parser.** It follows the spec's parsing algorithm step
+  by step and passes the WebVTT tests of
   [web-platform-tests](https://github.com/web-platform-tests/wpt/tree/master/webvtt),
-  so a file reads as it does in a browser.
-- **Cue text as Hiccup.** Voices, classes, ruby and inline timestamps come
-  out as a tree, e.g. for the speakers and the word timing of a
-  transcript.
-- **Files that read back.** What the library writes, it reads back as the
-  same data.
+  so you get the cues that a browser would show.
+- **Cue text as Hiccup.** The text of a cue parses into a tree with its
+  voices, classes, ruby and inline timestamps, e.g. for the speakers and
+  the word timing of a transcript.
+- **Files that read back.** Whatever you write parses back into the same
+  data.
 - **Conformance errors as data.** A file can parse and still not conform.
-  You can ask why, with the line and column of each error.
+  You can ask why, and get the line and column of each error.
 - **The same results everywhere.** One codebase runs on the JVM, in Node
-  and in browsers, none of which can parse WebVTT with a function call.
+  and in browsers. None of them has a WebVTT parser that you can call.
 
 > This library was developed with assistance from frontier LLMs.
 
@@ -36,7 +36,7 @@ dk.simongray/webvtt-clj {:mvn/version "0.1.0"}
 ```
 
 For changes that aren't released yet, use the SHA of the latest commit on
-`master` instead. Its one dependency is
+`master` instead. The library's only dependency is
 [langtag-clj](https://github.com/simongray/langtag-clj), which checks the
 language tags of `<lang>` spans.
 
@@ -54,22 +54,22 @@ Parse a file with `webvtt/parse`:
 ```
 
 A file is a map of its `:header`, `:regions`, `:stylesheets` and `:cues`,
-with only the parts it has. A cue only has the settings whose values
-aren't the defaults (see `webvtt/cue-defaults`), and its times are in
-seconds. For text that isn't WebVTT, `webvtt/parse` returns nil. Like a
-browser, it leaves out what it can't read, e.g. a cue whose timings are
-malformed.
+with only the parts it has. Times are in seconds. A cue only has the
+settings that differ from the defaults, which are in
+`webvtt/cue-defaults`. For text that isn't WebVTT, `webvtt/parse` returns
+nil. Like a browser, it leaves out what it can't read, e.g. a cue with
+malformed timings.
 
-The header is the text from WEBVTT to the first blank line, which is
-where an HLS segment has its X-TIMESTAMP-MAP. Style sheets are kept as
-text, and comments are dropped.
+The `:header` holds the text from WEBVTT to the first blank line, which is
+where an HLS segment has its X-TIMESTAMP-MAP. The parser keeps style
+sheets as text and drops comments.
 
 Cue text
 --------
 
-The text of a cue stays as it's written, since a metadata track can hold
-anything in it (e.g. JSON). To read the text of a caption or a subtitle as
-a tree of Hiccup, pass the cue or its text to `webvtt/hiccup`:
+A cue's `:text` is the cue text as written, since the cues of a metadata
+track can hold anything (e.g. JSON). To parse the text of a caption or a
+subtitle into Hiccup, pass the cue or its text to `webvtt/hiccup`:
 
 ```clojure
 (webvtt/hiccup "<v.loud Bob>Hi <00:00:02.000><i>there</i>")
@@ -82,8 +82,8 @@ The elements are named after the tags of cue text: `:c`, `:i`, `:b`, `:u`,
 `:timestamp` element, whose time is when the text after it is spoken.
 
 For the plain text, use `webvtt/text`, which leaves out ruby text as the
-spec does for the titles of chapters. For the timing of each word,
-`webvtt/runs` splits the text at its inline timestamps:
+spec does for chapter titles. To time each word, split the text at its
+inline timestamps with `webvtt/runs`:
 
 ```clojure
 (webvtt/runs {:start-time 1.0 :end-time 3.0 :text "Never <00:00:01.500>drink"})
@@ -93,8 +93,8 @@ spec does for the titles of chapters. For the timing of each word,
 Writing files
 -------------
 
-Write a file map as text with `webvtt/emit`, and a tree as cue text with
-`webvtt/cue-text`, which escapes what needs it:
+Write a file with `webvtt/emit`, and turn a tree of Hiccup into cue text
+with `webvtt/cue-text`, which escapes `&`, `<` and `>`:
 
 ```clojure
 (webvtt/emit {:cues [{:start-time 1 :end-time 4
@@ -102,7 +102,7 @@ Write a file map as text with `webvtt/emit`, and a tree as cue text with
 ;; => "WEBVTT\n\n00:00:01.000 --> 00:00:04.000\n<v Bob>Fish &amp; chips</v>\n"
 ```
 
-Both throw an ex-info for data that wouldn't read back the same, e.g. a
+Both throw an ex-info for data that wouldn't parse back the same, e.g. a
 blank line in the text of a cue, which would end the cue there. For a
 timestamp alone, use `webvtt/format-timestamp` and
 `webvtt/parse-timestamp`.
@@ -118,30 +118,34 @@ To check a file that someone else wrote, ask for its conformance errors:
 ;;     {:type :duplicate-setting :line 3 :column 42}]
 ```
 
-The spec names no errors, so each type is named after the rule it breaks,
-and `webvtt/error-types` says which. The rules for the text of cues depend
-on the kind of track, as HTML's track element has the kinds:
+The spec doesn't name its errors, so each type takes its name from the
+rule it breaks. To see which rule that is, look the type up in
+`webvtt/error-types`. The rules for the text of cues depend on the kind of
+track, as in HTML's `<track>` element:
 
 - `:subtitles` (the default), `:captions` and `:descriptions` check cue
   text
-- `:chapters` checks the titles of chapters, and that chapters nest
-- `:metadata` lets the text be anything
+- `:chapters` checks chapter titles and that the chapters nest
+- `:metadata` allows any text
 
-`webvtt/conforming?` takes the same kinds.
+For a yes or a no, use `webvtt/conforming?`, which takes the same kinds.
 
-The library leaves out the rendering of cues and the CSS of style sheets,
-which are a browser's job, and the VTTCue and VTTRegion interfaces, whose
-place the maps take.
+What it leaves out
+------------------
+
+The library doesn't render cues or apply the CSS of style sheets, which is
+a browser's job. Nor does it have the VTTCue and VTTRegion interfaces,
+since maps take their place.
 
 Principles
 ----------
 
 - **Standards first.** The code follows the WebVTT spec of 20 May 2026 and
   cites its sections.
-- **Plain data.** Files, cues and regions are maps, and cue text is
-  Hiccup, so the functions of Clojure work on all of them.
-- **One codebase.** The library is written in `.cljc`, and needs no
-  platform code to behave the same everywhere.
+- **Plain data.** Files, cues and regions are maps and cue text is Hiccup,
+  so Clojure's own functions work on all of them.
+- **One codebase.** The library is written in `.cljc`, and leans on the
+  platform only where every platform gives the same answer.
 
 Development
 -----------
@@ -157,14 +161,14 @@ clojure -M:cljs release bench && node target/bench.js # benchmarks in Node
 dev/size.sh                                           # the size of each browser bundle
 ```
 
-The size script builds a browser bundle for each set of functions that a
-page may use, e.g. only `parse`, and prints its size. Give it the name of
-one, e.g. `dev/size.sh text`, to see what each namespace adds to it.
-
 The fetch script downloads the WebVTT tests of web-platform-tests and the
 track element tests of HTML into `dev-resources/` (which Git ignores), at
 the commit that the library follows. Their expectations are JavaScript, so
-`test/wpt` has them translated into EDN.
+`test/wpt` holds them translated into EDN.
+
+The size script builds a browser bundle for each set of functions that a
+page may use, e.g. only `parse`, and prints its size. Name one, e.g.
+`dev/size.sh text`, to see what each namespace adds to it.
 
 The public functions are all in the root namespace. The internal ones are
 under `impl`:

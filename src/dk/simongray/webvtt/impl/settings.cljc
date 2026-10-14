@@ -2,8 +2,8 @@
   "Timestamps, and the settings of regions and cues (WebVTT, sections 6.2
   and 6.3).
 
-  A cue or a region is a map of only those attributes whose values aren't
-  the defaults of the data model in section 3: cue-defaults and
+  A cue or a region is a map of only the attributes that differ from the
+  defaults of the data model in section 3, which are cue-defaults and
   region-defaults. Times and percentages are doubles, and the lines of a
   region are an integer."
   (:require [clojure.string :as str]
@@ -51,11 +51,12 @@
     (assoc m k v)))
 
 (def put-cue
-  "The cue with an attribute set, as put sets it."
+  "Set an attribute of a cue, as put does with the defaults of a cue."
   (partial put cue-defaults))
 
 (def put-region
-  "The region with an attribute set, as put sets it."
+  "Set an attribute of a region, as put does with the defaults of a
+  region."
   (partial put region-defaults))
 
 ;; HTML, "rules for parsing floating-point number values", for text that
@@ -72,7 +73,7 @@
 
 (defn integer-value
   "The number of the ASCII digits `s`: a long, or a double when it's too
-  large for both platforms to hold exactly."
+  large for a long to hold exactly on both platforms."
   [s]
   (let [x (parse-double s)]
     (if (< x 9007199254740992)
@@ -105,10 +106,13 @@
         j))))
 
 (defn unit-ends
-  "The index where each unit of the WebVTT timestamp at `i` in the text `s`
-  ends, or nil when they aren't as section 6.3 collects them: the first
-  digits, the two after a colon, the two after another colon or nil when
-  there's no third unit, and the three after a dot."
+  "Where each unit of the WebVTT timestamp at `i` in the text `s` ends, or
+  nil when the units aren't as section 6.3 collects them. The units are:
+
+  - the first digits
+  - the two digits after a colon
+  - the two digits after another colon, or nil when there's no third unit
+  - the three digits after a dot"
   [s ^long i]
   (let [a (chars/digits-end s i)]
     (when (< i a)
@@ -126,7 +130,7 @@
 (defn seconds
   "The seconds of the timestamp of `h` hours, `m` minutes, `s` seconds and
   `ms` milliseconds, added up in the order of section 6.3, so that the
-  double is a browser's."
+  double is the one that a browser gets."
   ^double [^double h ^double m ^double s ^double ms]
   #_{:clj-kondo/ignore [:redundant-nested-call]}
   (+ (+ (+ (* (* h 60) 60) (* m 60)) s) (/ ms 1000.0)))
@@ -188,8 +192,8 @@
 
 ;; WebVTT, section 6.2, "collect WebVTT region settings"
 (defn region-setting
-  "The `region` with the setting of `k` and `v` applied, or as it is when
-  `v` isn't a value of it."
+  "The `region` with its setting named `k` set to `v`, or as it is when `v`
+  isn't a valid value for that setting."
   [region [k v]]
   (case k
     "id"             (put-region region :id v)
@@ -203,7 +207,8 @@
     region))
 
 (defn region-settings
-  "The region of the settings in the text `s` of a REGION block."
+  "The region that the settings in the text `s` of a REGION block
+  describe."
   [s]
   (reduce region-setting {} (settings s)))
 
@@ -220,8 +225,8 @@
     (cond-> cue (:vertical cue) (dissoc :region))))
 
 (defn line-number
-  "The number of the line position `s` that isn't a percentage, or nil
-  when it isn't a number with a sign and a fraction at most."
+  "The number of the line position `s` when it's a line number rather than
+  a percentage, i.e. digits with an optional sign and fraction, or nil."
   [s]
   (when (re-matches #"-?[0-9]+(?:\.[0-9]+)?" s)
     (float-value s)))
@@ -282,8 +287,8 @@
     cue))
 
 (defn cue-setting
-  "The `cue` with the setting of `k` and `v` applied, where the `regions`
-  are those that a region setting can name."
+  "The `cue` with its setting named `k` set to `v`, where the `regions` are
+  those that a region setting can name."
   [regions cue [k v]]
   (case k
     "region"   (if (some #(= v (:id %)) regions)
@@ -306,9 +311,9 @@
       (+ i 3))))
 
 (defn timings-and-settings
-  "The cue of the timings and settings of the `line`, where the `regions`
-  are those that a region setting can name, or nil when its timings don't
-  parse."
+  "The cue that the timings and settings of the `line` describe, or nil
+  when its timings don't parse. The `regions` are those that a region
+  setting can name."
   [line regions]
   (when-let [[start i] (timestamp line (chars/skip-whitespace line 0))]
     (when-let [i (arrow-end line i)]

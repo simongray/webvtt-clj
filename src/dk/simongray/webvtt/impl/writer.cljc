@@ -1,20 +1,19 @@
 (ns ^:no-doc dk.simongray.webvtt.impl.writer
-  "WebVTT files and cue text, written from file maps and Hiccup by the
-  syntax of section 4, so that the parser reads them back as the same
-  data.
+  "Write WebVTT files and cue text from file maps and Hiccup, by the
+  syntax of section 4, so that they parse back into the same data.
 
-  What can't be written so that it reads back the same throws an ex-info
-  whose data has a :reason, e.g. a blank line in the text of a cue, which
-  would end the cue there. What's merely non-conforming, e.g. cues out of
-  order, is written as it is."
+  For data that can't be written so that it parses back the same, e.g. a
+  blank line in the text of a cue (which would end the cue there), the
+  writer throws an ex-info whose data has a :reason. It still writes what
+  merely doesn't conform, e.g. cues out of order."
   (:require [clojure.string :as str]
             [dk.simongray.webvtt.impl.chars :as chars]
             [dk.simongray.webvtt.impl.parser :as parser]
             [dk.simongray.webvtt.impl.settings :as settings]))
 
 (defn refuse
-  "Throw an ex-info that says why `x` can't be written, with the `reason`
-  and the `data`."
+  "Throw an ex-info with the `message`, whose data has the `reason`, the
+  value `x` that can't be written and any more `data`."
   [message reason x & {:as data}]
   (throw (ex-info message (merge {:reason reason :value x} data))))
 
@@ -68,15 +67,14 @@
     (str/replace s #"^(-?)0+(?=[0-9])" "$1")))
 
 (defn percentage
-  "The `x` as a WebVTT percentage, e.g. 40%."
+  "The number `x` as a WebVTT percentage, e.g. 40%."
   [x]
   (when-not (and (number? x) (<= 0 x 100))
     (refuse "A percentage must be a number from 0 to 100" :percentage x))
   (str (decimal x) "%"))
 
-;; WebVTT, section 4.2.2, cue text: the text escapes what would read as
-;; markup, and a line feed that would leave a blank line, which would end
-;; the cue
+;; WebVTT, section 4.2.2, cue text: escape what would parse as markup, and
+;; any line feed that would leave a blank line and so end the cue
 (defn text-escape
   "The text `s` of a text node, with &, <, > and a carriage return as
   character references."
@@ -98,16 +96,17 @@
                             s))))
 
 (defn annotation
-  "The annotation `s` of a start tag as written, with its whitespace
-  collapsed as the parser reads it, and &, > and a hyphen that would make
-  an arrow with the > of the tag as character references."
+  "The annotation `s` of a start tag as it's written: with its whitespace
+  collapsed, as the parser would collapse it, and with &, > and a last
+  hyphen that would make an arrow with the tag's > as character
+  references."
   [s]
   (-> (str/escape (str/join " " (chars/words (str s))) {\& "&amp;" \> "&gt;"})
       (str/replace #"--$" "-&#45;")))
 
 (defn class-names
-  "The `classes` of a start tag, each after a dot. An empty class is left
-  out, as the parser leaves it out."
+  "The `classes` of a start tag, each after a dot, without the empty ones,
+  which the parser would leave out anyway."
   [classes]
   (apply str (for [c classes :when (seq c)]
                (if (re-find #"[\t\n\f\r .>]" c)
@@ -166,9 +165,9 @@
 ;; WebVTT, section 4.1, the WebVTT file body
 
 (defn check-lines
-  "The text `s` of a block or a part of one, or throw when its lines
-  wouldn't read back as written: when it has a carriage return, an empty
-  line, or a line with an arrow, which would end the block."
+  "The text `s` of a block or a part of one, as it is, or throw when it
+  has a carriage return, an empty line or an arrow, which wouldn't parse
+  back as written. The message names `s` by `what` it is."
   [s what]
   (cond
     (str/includes? s "\r")
@@ -191,7 +190,7 @@
     (let [s (str header)
           i (str/index-of s "\n")]
       (when-not (parser/signature? s)
-        (refuse "A header must start with WEBVTT, and a space, a tab or a line break" :header s))
+        (refuse "A header must start with WEBVTT, followed by a space, a tab or a line break" :header s))
       (when (str/includes? s "\r")
         (refuse "A header can't hold a carriage return" :carriage-return s))
       (when i
@@ -199,8 +198,8 @@
       s)))
 
 (defn region-block
-  "The REGION block of the `region`. A region of only defaults says so in
-  its lines setting, since a block of the word alone is no region."
+  "The REGION block of the `region`. A region of only defaults gets a
+  lines setting anyway, since the word REGION alone isn't a region."
   [region]
   (let [r       (merge settings/region-defaults region)
         id      (:id r)
@@ -258,8 +257,8 @@
 
 (defn cue-settings
   "The settings of the `cue`, with the `regions` of its file, as written
-  after its timings. The region comes last, since a line, a size or a
-  vertical setting before it would leave the cue out of the region."
+  after its timings. The region comes last, since a line, size or
+  vertical setting after it would take the cue out of the region."
   [{:keys [vertical size align region] :or {vertical :horizontal size 100.0 align :center} :as cue}
    regions]
   (when (and region (not (some #(= region (:id %)) regions)))

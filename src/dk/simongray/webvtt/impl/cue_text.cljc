@@ -1,13 +1,13 @@
 (ns ^:no-doc dk.simongray.webvtt.impl.cue-text
   "The cue text parsing rules of WebVTT, section 6.4: the tokenizer, and
-  the tree of nodes that its tokens build, as Hiccup. Also the rules for
-  extracting the chapter title of section 6.6.
+  the tree of Hiccup that its tokens build. It also has the rules for
+  extracting a chapter title (section 6.6).
 
   The tree is a vector of nodes. A node is a string of text, an element
   [tag attrs & children] with a tag of :c, :i, :b, :u, :ruby, :rt, :v or
-  :lang, or an inline timestamp [:timestamp {:time seconds}]. The attrs of
-  an element hold its :class, a vector of class names, when it has any,
-  the :voice of a :v and the :lang of a :lang.
+  :lang, or an inline timestamp [:timestamp {:time seconds}]. An element's
+  attrs hold its :class (a vector of class names) when it has classes, the
+  :voice of a :v and the :lang of a :lang.
 
   Each state of the tokenizer reads the run of text up to the character
   that ends it, rather than a character at a time."
@@ -29,8 +29,8 @@
 ;; showed to be faster than calling a predicate on each character, and a
 ;; reference never runs past the < or > that ends a run
 (defn decoded-run
-  "The text from `i` in the cue text `s` up to the next `stop`, a string of
-  one character, or its end, with its character references decoded, and
+  "The text from `i` in the cue text `s` up to the next `stop` (a string of
+  one character) or the end, with its character references decoded, and
   the index where it stops, as a pair."
   [s i stop]
   (let [end (or (str/index-of s stop i) (chars/length s))]
@@ -67,7 +67,7 @@
   "The start tag token of the `name` and the `classes`, with the
   annotation from `i` in the cue text `s`, and the index after it, as a
   pair (the start tag annotation state). The annotation starts with the
-  `buffer`, and has its ASCII whitespace trimmed and collapsed."
+  `buffer` and has its ASCII whitespace trimmed and collapsed."
   [s i name classes buffer]
   (let [[value j] (decoded-run s i ">")
         value     (str/join " " (chars/words (str buffer value)))]
@@ -165,13 +165,13 @@
     (first (peek stack))))
 
 (def element-tags
-  "The tag of the element that each tag name of cue text opens, :rt only
-  in a :ruby."
+  "The element tag that each tag name of cue text opens (:rt only inside a
+  :ruby)."
   {"c" :c "i" :i "b" :b "u" :u "ruby" :ruby "rt" :rt "v" :v "lang" :lang})
 
 (defn element
-  "The element of the `tag` that the start tag `token` opens, with its
-  classes, but none that's empty, and its annotation as a :voice or a
+  "The element with the `tag` that the start tag `token` opens, with the
+  token's classes that aren't empty and its annotation as a :voice or a
   :lang."
   [tag {:keys [classes annotation]}]
   (let [classes (filterv seq classes)]
@@ -190,8 +190,9 @@
       stack)))
 
 (defn end
-  "The `stack` with the element that the end tag `token` ends closed, or as
-  it is when it ends none. A </ruby> closes an open :rt too."
+  "The `stack` after the end tag `token`: with the element that it ends
+  closed, or as it is when it ends none. A </ruby> also closes an open
+  :rt."
   [stack token]
   (let [tag     (current-tag stack)
         name    (:name token)]
@@ -248,10 +249,10 @@
     (apply str (mapcat texts nodes))))
 
 (defn runs
-  "The text of the `nodes` of a tree in runs, split at its inline
-  timestamps, as maps of the :start-time and the :text of each, where the
-  first run starts at `start`. The text leaves out ruby text, as text does,
-  and a run without text is left out."
+  "The text of the tree `nodes`, split at its inline timestamps into runs,
+  as maps of the :start-time and the :text of each. The first run starts
+  at `start`. Like text, the runs leave out ruby text, and there's no run
+  without text."
   [nodes start]
   (letfn [(items [node]
             (cond
