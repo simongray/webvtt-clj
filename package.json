@@ -1,0 +1,9 @@
+{
+  "name": "webvtt-clj",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Node test tools for webvtt-clj. The library itself has no npm dependencies.",
+  "devDependencies": {
+    "shadow-cljs": "^3.5.3"
+  }
+}

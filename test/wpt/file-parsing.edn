@@ -1,0 +1,350 @@
+;; The expectations of the file parsing tests of web-platform-tests, at
+;; commit 38d608e1005d6d7f0fecefb3b7b14109ab3c3b1d, which dev/fetch.sh
+;; checks out. They're translated by hand from the JavaScript assertions
+;; in webvtt/parsing/file-parsing/support/*.test, and from the two tests
+;; written by hand in webvtt/parsing/file-parsing/tests (header-regions and
+;; regions-edge-case). Under the 3-Clause BSD License of web-platform-tests,
+;; which is in LICENSE.md next to this file.
+;;
+;; :cues has a key for each input in webvtt/parsing/file-parsing/tests/support,
+;; without its .vtt. Its value has a map for each cue that the file must
+;; parse into, of the VTTCue attributes that the test checks, as VTTCue has
+;; them. A :region is a map of the VTTRegion attributes that the test
+;; checks, or nil when the cue must have no region.
+;;
+;; :not-webvtt names the inputs in webvtt/parsing/file-parsing/support that
+;; signature-invalid.html expects to fail to load.
+{:commit "38d608e1005d6d7f0fecefb3b7b14109ab3c3b1d"
+
+ :not-webvtt
+ ["empty" "signature-formfeed" "signature-invalid-whitespace" "signature-invalid"
+  "signature-lowercase" "signature-missing-whitespace" "signature-missing"
+  "signature-null" "signature-partial" "signature-two-boms" "signature-websrt"]
+
+ :cues
+ {"arrows"
+  [{:id "" :text "text0"}
+   {:id "" :text "text1"}
+   {:id "" :text "text2"}
+   {:id "" :text "text3"}
+   {:id "" :text "text4"}
+   {:id "" :text "text5"}]
+
+  "comment-in-cue-text"
+  [{:text "NOTE text" :startTime 0 :endTime 1}
+   {:text "NOTE text\nNOTE text2" :startTime 1 :endTime 2}]
+
+  "header-garbage"
+  [{:text "text" :startTime 0 :endTime 1}]
+
+  "header-space"
+  [{:text "text" :startTime 0 :endTime 1}]
+
+  "header-tab"
+  [{:text "text" :startTime 0 :endTime 1}]
+
+  "header-timings"
+  [{:text "text" :startTime 0 :endTime 1}]
+
+  ;; written by hand: each cue's text is the JSON of its region's
+  ;; attributes, the rest being the defaults of the test
+  "header-regions"
+  [{:region nil}
+   {:region nil}
+   {:region nil}
+   {:region nil}
+   {:region {:width 100 :lines 3 :regionAnchorX 0 :regionAnchorY 100
+             :viewportAnchorX 0 :viewportAnchorY 100 :scroll ""}}
+   {:region {:width 32 :lines 5 :regionAnchorX 41 :regionAnchorY 20
+             :viewportAnchorX 31 :viewportAnchorY 84 :scroll "up"}}
+   {:region {:width 100 :lines 3 :regionAnchorX 41.125 :regionAnchorY 20.25
+             :viewportAnchorX 32.75 :viewportAnchorY 32.5 :scroll ""}}
+   {:region {:width 67 :lines 3 :regionAnchorX 0 :regionAnchorY 100
+             :viewportAnchorX 0 :viewportAnchorY 100 :scroll ""}}
+   {:region nil}
+   {:region {:width 10 :lines 5 :regionAnchorX 40 :regionAnchorY 20
+             :viewportAnchorX 30 :viewportAnchorY 80 :scroll "up"}}]
+
+  "ids"
+  [{:id " leading space"}
+   {:id "trailing space "}
+   {:id "-- >"}
+   {:id "->"}
+   {:id " "}]
+
+  "newlines"
+  [{:id "cr" :text "text0"}
+   {:id "lf" :text "text1"}
+   {:id "crlf" :text "text2"}
+   {:id "lfcr" :text "text3"}]
+
+  ;; each NUL is a U+FFFD here, which the strings hold as it is
+  "nulls"
+  [{:id "" :text "text0"}
+   {:id "� (null in id)" :text "text1"}
+   {:id "� (null in cue data)" :text "�text�2"}
+   {:align "center" :text "text3"}
+   {:align "center" :text "text4"}
+   {:align "center" :text "text5"}
+   {:align "end" :text "text6"}]
+
+  ;; the id of the last region, and the region setting of the last cue, is
+  ;; a vertical tab, which isn't ASCII whitespace
+  "regions-id"
+  [{:region {:lines 2}}
+   {:region {:lines 1}}
+   {:region {:lines 3}}
+   {:region {:lines 4}}]
+
+  ;; generated, but without its .test file in WPT
+  "regions-edge-case"
+  [{:region {:lines 1 :id "foo"}}
+   {:region {:lines 2 :id "bill"}}
+   {:region {:lines 3 :id "jill"}}
+   {:region {:lines 4 :id "jack"}}]
+
+  "regions-lines"
+  [{:region {:lines 0}}
+   {:region {:lines 1}}
+   {:region {:lines 100}}
+   {:region {:lines 101}}
+   {:region {:lines 65536}}
+   {:region {:lines 4294967295}}
+   {:region {:lines 2}}
+   {:region {:lines 3}}
+   {:region {:lines 3}}
+   {:region {:lines 3}}
+   {:region {:lines 3}}]
+
+  "regions-old"
+  [{:region nil}
+   {:region nil}]
+
+  "regions-regionanchor"
+  [{:region {:regionAnchorX 0 :regionAnchorY 100}}
+   {:region {:regionAnchorX 0 :regionAnchorY 0}}
+   {:region {:regionAnchorX 1 :regionAnchorY 1}}
+   {:region {:regionAnchorX 100 :regionAnchorY 0}}
+   {:region {:regionAnchorX 0 :regionAnchorY 100}}
+   {:region {:regionAnchorX 100 :regionAnchorY 100}}
+   {:region {:regionAnchorX 0 :regionAnchorY 100}}
+   {:region {:regionAnchorX 0 :regionAnchorY 100}}
+   {:region {:regionAnchorX 0 :regionAnchorY 100}}
+   {:region {:regionAnchorX 0 :regionAnchorY 100}}
+   {:region {:regionAnchorX 0 :regionAnchorY 100}}
+   {:region {:regionAnchorX 0 :regionAnchorY 100}}
+   {:region {:regionAnchorX 0 :regionAnchorY 100}}
+   {:region {:regionAnchorX 0 :regionAnchorY 100}}
+   {:region {:regionAnchorX 0 :regionAnchorY 100}}
+   {:region {:regionAnchorX 0 :regionAnchorY 100}}
+   {:region {:regionAnchorX 0 :regionAnchorY 100}}
+   {:region {:regionAnchorX 0 :regionAnchorY 100}}
+   {:region {:regionAnchorX 0 :regionAnchorY 100}}
+   {:region {:regionAnchorX 0 :regionAnchorY 100}}]
+
+  "regions-scroll"
+  [{:region {:scroll ""}}
+   {:region {:scroll "up"}}
+   {:region {:scroll "up"}}
+   {:region {:scroll ""}}
+   {:region {:scroll ""}}
+   {:region {:scroll "up"}}]
+
+  "regions-viewportanchor"
+  [{:region {:viewportAnchorX 0 :viewportAnchorY 100}}
+   {:region {:viewportAnchorX 0 :viewportAnchorY 0}}
+   {:region {:viewportAnchorX 1 :viewportAnchorY 1}}
+   {:region {:viewportAnchorX 100 :viewportAnchorY 0}}
+   {:region {:viewportAnchorX 0 :viewportAnchorY 100}}
+   {:region {:viewportAnchorX 100 :viewportAnchorY 100}}
+   {:region {:viewportAnchorX 0 :viewportAnchorY 100}}
+   {:region {:viewportAnchorX 0 :viewportAnchorY 100}}
+   {:region {:viewportAnchorX 0 :viewportAnchorY 100}}
+   {:region {:viewportAnchorX 0 :viewportAnchorY 100}}
+   {:region {:viewportAnchorX 0 :viewportAnchorY 100}}
+   {:region {:viewportAnchorX 0 :viewportAnchorY 100}}
+   {:region {:viewportAnchorX 0 :viewportAnchorY 100}}
+   {:region {:viewportAnchorX 0 :viewportAnchorY 100}}
+   {:region {:viewportAnchorX 0 :viewportAnchorY 100}}
+   {:region {:viewportAnchorX 0 :viewportAnchorY 100}}
+   {:region {:viewportAnchorX 0 :viewportAnchorY 100}}
+   {:region {:viewportAnchorX 0 :viewportAnchorY 100}}
+   {:region {:viewportAnchorX 0 :viewportAnchorY 100}}
+   {:region {:viewportAnchorX 0 :viewportAnchorY 100}}]
+
+  "settings-align"
+  [{:align "center"}
+   {:align "start"}
+   {:align "center"}
+   {:align "end"}
+   {:align "left"}
+   {:align "right"}
+   {:align "end"}
+   {:align "end"}
+   {:align "end"}
+   {:align "end"}
+   {:align "end"}
+   {:align "end"}
+   {:align "center"}]
+
+  "settings-line"
+  [{:line -1 :snapToLines true}
+   {:line 0 :snapToLines true}
+   {:line 0 :snapToLines true}
+   {:line 1 :snapToLines true}
+   {:line 100 :snapToLines true}
+   {:line 101 :snapToLines true}
+   {:line 65536 :snapToLines true}
+   {:line 4294967296 :snapToLines true}
+   {:line 1.8446744073709552E19 :snapToLines true}
+   {:line 1.0E34 :snapToLines true}
+   {:line 1.5 :snapToLines true}
+   {:line 1.7976931348623157E308 :snapToLines true}
+   {:line -1.7976931348623157E308 :snapToLines true}
+   {:line 4.9E-324 :snapToLines true}
+   {:line 0 :snapToLines true}
+   {:line "auto" :snapToLines true}
+   {:line "auto" :snapToLines true}
+   {:line "auto" :snapToLines true}
+   {:line "auto" :snapToLines true}
+   {:line "auto" :snapToLines true}
+   {:line "auto" :snapToLines true}
+   {:line "auto" :snapToLines true}
+   {:line "auto" :snapToLines true}
+   {:line "auto" :snapToLines true}
+   {:line "auto" :snapToLines true}
+   {:line "auto" :snapToLines true}
+   {:line "auto" :snapToLines true}
+   {:line "auto" :snapToLines true}
+   {:line "auto" :snapToLines true}
+   {:line "auto" :snapToLines true}
+   {:line "auto" :snapToLines true}
+   {:line "auto" :snapToLines true}
+   {:line "auto" :snapToLines true}
+   {:line "auto" :snapToLines true}
+   {:line "auto" :snapToLines true}
+   {:line "auto" :snapToLines true}
+   {:line "auto" :snapToLines true}
+   {:line "auto" :snapToLines true}
+   {:line 0 :snapToLines false}
+   {:line 0 :snapToLines false}
+   {:line 100 :snapToLines false :lineAlign "start"}
+   {:line 100 :snapToLines false :lineAlign "start"}
+   {:line 100 :snapToLines false :lineAlign "center"}
+   {:line 100 :snapToLines false :lineAlign "end"}
+   {:line 4.9E-324 :snapToLines false}
+   {:line 0 :snapToLines false}
+   {:line "auto" :snapToLines true :lineAlign "start"}]
+
+  "settings-multiple"
+  [{:id "id0" :text "text0" :align "start" :line 1 :snapToLines false
+    :vertical "lr" :size 50 :position 25}
+   {:id "id1" :text "text1" :align "center" :line 1 :vertical "rl" :size 0
+    :position 100}]
+
+  "settings-position"
+  [{:position 1 :positionAlign "auto"}
+   {:position 100 :positionAlign "auto"}
+   {:position 1 :positionAlign "auto"}
+   {:position 1.5 :positionAlign "auto"}
+   {:position 1 :positionAlign "line-left"}
+   {:position 1 :positionAlign "center"}
+   {:position 1 :positionAlign "line-right"}
+   {:position 1 :positionAlign "auto"}
+   {:position "auto" :positionAlign "auto"}
+   {:position "auto" :positionAlign "auto"}
+   {:position "auto" :positionAlign "auto"}
+   {:position "auto" :positionAlign "auto"}
+   {:position "auto" :positionAlign "auto"}
+   {:position "auto" :positionAlign "auto"}
+   {:position "auto" :positionAlign "auto"}
+   {:position "auto" :positionAlign "auto"}
+   {:position "auto" :positionAlign "auto"}
+   {:position "auto" :positionAlign "auto"}
+   {:position "auto" :positionAlign "auto"}
+   {:position "auto" :positionAlign "auto"}
+   {:position "auto" :positionAlign "auto"}
+   {:position "auto" :positionAlign "auto"}
+   {:position "auto" :positionAlign "auto"}
+   {:position "auto" :positionAlign "auto"}
+   {:position "auto" :positionAlign "auto"}]
+
+  ;; the test compares regions as objects, which here are the regions with
+  ;; the ids foo and bar
+  "settings-region"
+  [{:region {:id "foo"}}
+   {:region {:id "bar"}}
+   {:region {:id "bar"}}
+   {:region nil}
+   {:region {:id "foo"}}
+   {:region nil}
+   {:region nil}
+   {:region nil}
+   {:region nil}]
+
+  "settings-size"
+  [{:size 100}
+   {:size 2}
+   {:size 0}
+   {:size 0}
+   {:size 100}
+   {:size 50}
+   {:size 1.5}
+   {:size 100}
+   {:size 100}
+   {:size 100}
+   {:size 100}
+   {:size 100}
+   {:size 100}
+   {:size 100}
+   {:size 100}
+   {:size 100}]
+
+  "settings-vertical"
+  [{:vertical ""}
+   {:vertical "lr"}
+   {:vertical "rl"}
+   {:vertical "lr"}
+   {:vertical ""}
+   {:vertical ""}
+   {:vertical ""}
+   {:vertical ""}]
+
+  "signature-bom"              []
+  "signature-no-newline"       []
+  "signature-space-no-newline" []
+  "signature-space"            []
+  "signature-tab-no-newline"   []
+  "signature-tab"              []
+  "signature-timings"          []
+
+  "timings-60"
+  [{:text "text1" :startTime 0 :endTime 216001}
+   {:text "text2" :startTime 216000 :endTime 216001}]
+
+  "timings-eof"     []
+  "timings-garbage" []
+
+  "timings-negative"
+  [{:text "text0" :startTime 0 :endTime 0}
+   {:text "text1" :startTime 1 :endTime 0.999}
+   {:text "text2" :startTime 60 :endTime 59.999}
+   {:text "text3" :startTime 3600 :endTime 3599.999}]
+
+  "timings-omitted-hours"
+  [{:text "text0" :startTime 0 :endTime 1}
+   {:text "text1" :startTime 0 :endTime 1}
+   {:text "text2" :startTime 0 :endTime 1}]
+
+  "timings-too-long"
+  [{:text "text0" :startTime 0 :endTime 1}
+   {:text "text1" :startTime 0 :endTime 1}]
+
+  "timings-too-short"
+  [{:text "text0" :startTime 0 :endTime 1}
+   {:text "text1" :startTime 0 :endTime 1}]
+
+  "whitespace-chars"
+  [{:id "spaces" :text "   text0"}
+   {:id "tabs" :text "text1"}
+   {:id "form feed" :text "text2"}]}}

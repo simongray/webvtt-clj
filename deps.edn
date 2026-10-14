@@ -1,0 +1,49 @@
+{:paths ["src" "resources"]
+
+ ;; Clojure 1.11 is the floor, and the tests run on it unless an alias says
+ ;; otherwise. langtag-clj checks the language tags of lang spans.
+ :deps  {org.clojure/clojure      {:mvn/version "1.11.4"}
+         dk.simongray/langtag-clj {:mvn/version "0.2.0"}}
+
+ :aliases
+ {;; clojure -X:test  (test.check makes the random files of the generative
+  ;; tests)
+  :test {:extra-paths ["test"]
+         :extra-deps  {org.clojure/test.check {:mvn/version "1.1.3"}
+                       io.github.cognitect-labs/test-runner
+                       {:git/tag "v0.5.1" :git/sha "dfb30dd"}}
+         :main-opts   ["-m" "cognitect.test-runner"]
+         :exec-fn     cognitect.test-runner.api/test}
+
+  ;; clojure -M:cljs compile test  (the tests in Node)
+  :cljs {:extra-paths   ["test" "dev"]
+         :override-deps {org.clojure/clojure {:mvn/version "1.12.5"}}
+         :extra-deps    {thheller/shadow-cljs    {:mvn/version "3.5.3"}
+                         org.clojure/test.check {:mvn/version "1.1.3"}}
+         :main-opts     ["-m" "shadow.cljs.devtools.cli"]}
+
+  ;; clojure -X:tables  (the table of character references in resources,
+  ;; from the entities.json that dev/fetch.sh downloads)
+  :tables {:extra-paths ["dev"]
+           :extra-deps  {org.clojure/data.json {:mvn/version "2.5.2"}}
+           :exec-fn     dk.simongray.webvtt.tables/write!}
+
+  ;; clojure -M:bench -m dk.simongray.webvtt.bench  (criterium times the
+  ;; parser, and clj-async-profiler draws flame graphs of it)
+  :bench {:extra-paths ["dev"]
+          :extra-deps  {criterium/criterium                      {:mvn/version "0.4.6"}
+                        com.clojure-goes-fast/clj-async-profiler {:mvn/version "1.8.0"}}
+          :jvm-opts    ["-Djdk.attach.allowAttachSelf"
+                        "-XX:+UnlockDiagnosticVMOptions"
+                        "-XX:+DebugNonSafepoints"]}
+
+  ;; clojure -M:test:tables:bench:nrepl
+  :nrepl {:extra-deps {nrepl/nrepl {:mvn/version "1.7.0"}}
+          ;; lets nrepl interrupt runaway evaluations
+          :jvm-opts   ["-Djdk.attach.allowAttachSelf"]
+          :main-opts  ["-m" "nrepl.cmdline"]}
+
+  ;; clojure -T:build jar | install | deploy  (see build.clj)
+  :build {:deps       {io.github.clojure/tools.build {:mvn/version "0.10.14"}
+                       slipset/deps-deploy            {:mvn/version "0.2.5"}}
+          :ns-default build}}}

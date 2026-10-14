@@ -1,0 +1,330 @@
+;; The expectations of the WebVTT tests of HTML's track element in
+;; web-platform-tests, at commit 38d608e1005d6d7f0fecefb3b7b14109ab3c3b1d,
+;; which dev/fetch.sh checks out. They're translated by hand from the
+;; JavaScript of
+;; html/semantics/embedded-content/media-elements/track/track-element/track-webvtt-*.html,
+;; but for the two that test rendering. Under the 3-Clause BSD License of
+;; web-platform-tests, which is in LICENSE.md next to this file.
+;;
+;; Each key names an input in the resources directory of those tests,
+;; without its .vtt. Its value is nil when the input must fail to load, and
+;; otherwise a map of what the test checks:
+;;
+;; - :cues, a map for each cue that the file must parse into, of the
+;;   VTTCue attributes that the test checks, as VTTCue has them
+;; - :count, the number of cues alone
+;; - :fragments, the DOM of each cue's getCueAsHTML, as HTML Hiccup with
+;;   :class, :title and :lang attributes
+;; - :text-content, the textContent of each cue's getCueAsHTML
+{:commit "38d608e1005d6d7f0fecefb3b7b14109ab3c3b1d"
+
+ :files
+ {"align-positioning"
+  {:cues [{:position 10 :align "start"}
+          {:position 20 :align "center"}
+          {:position 80 :align "end"}]}
+
+  "align-positioning-bad"
+  {:cues [{:position 10 :align "center"}
+          {:position "auto" :align "center"}
+          {:position "auto" :align "center"}]}
+
+  "align-text-line-position"
+  {:cues [{:align "start" :position 10 :line 0 :snapToLines false}
+          {:align "start" :position "auto" :line 0 :snapToLines true}
+          {:align "center" :position 80 :line 80 :snapToLines false}
+          {:align "end" :position 30 :line 5 :snapToLines true}
+          {:align "center" :position 60 :line -3 :snapToLines true}]}
+
+  "align-text-line-position-bad"
+  {:cues [{:align "center" :position "auto" :line "auto" :snapToLines true}
+          {:align "end" :position 0 :line "auto" :snapToLines true}
+          {:align "center" :position 60 :line -3 :snapToLines true}]}
+
+  "alignment"
+  {:cues [{:align "start"} {:align "center"} {:align "end"} {:align "center"}]}
+
+  "alignment-ltr"
+  {:cues [{:align "start"} {:align "center"} {:align "end"} {:align "center"}]}
+
+  "alignment-bad"
+  {:cues [{:align "center"} {:align "center"} {:align "center"} {:align "center"}]}
+
+  "cues"
+  {:cues [{:id "1" :startTime 0 :endTime 30.5 :text "Bear is Coming!!!!!"}
+          {:id "2" :startTime 31 :endTime 60.5 :text "I said Bear is coming!!!!"}
+          {:id "3" :startTime 61 :endTime 361200.5 :text "I said Bear is coming now!!!!"}]}
+
+  "cues-no-separation"
+  {:cues [{:id "1" :startTime 0 :endTime 30.5 :text "Bear is Coming!!!!!\n2"}
+          {:id "" :startTime 31 :endTime 60.5 :text "I said Bear is coming!!!!"}
+          {:id "" :startTime 61 :endTime 361200.5 :text "I said Bear is coming now!!!!"}]}
+
+  "bom"
+  {:cues [{:id "1" :startTime 0 :endTime 30.5 :text "Bear is Coming!!!!!"}
+          {:id "2" :startTime 31 :endTime 1200.5 :text "I said Bear is coming!!!!"}]}
+
+  "class"
+  {:fragments [[[:span {:class "black"} "Bear is Coming!!!!!"]]
+               [[:span {:class "green"} "I said Bear is coming!!!!"]]
+               ["I said " [:span {:class "red uppercase"} "Bear is coming now"] "!!!!"]]}
+
+  "class-bad"
+  {:fragments [[[:span {} "Bear is Coming!!!!!"]
+                "\nThe space signified an annotation start."]
+               [[:span {:class "red&large"} "I said Bear is coming!!!!"]
+                "\nProbably should only allow characters that CSS allows in class names."]
+               ["I said " [:span {:class "9red upper+case"} "Bear is coming now"]
+                "!!!!\nProbably should only allow characters that CSS allows in class names."]]}
+
+  "cue-id"
+  {:cues [{:id "random_id" :startTime 0 :endTime 30.5 :text "Bear is Coming!!!!!"}
+          {:id "another random identifier" :startTime 31 :endTime 60.5
+           :text "I said Bear is coming!!!!"}
+          {:id "identifier--too" :startTime 61 :endTime 120.5
+           :text "I said Bear is coming now!!!!"}
+          {:id "identifier--too" :startTime 121 :endTime 180.5 :text "Duplicate identifier"}]}
+
+  "cue-id-error"
+  {:cues [{:id "" :startTime 0 :endTime 30.5 :text "Bear is Coming!!!!!"}
+          {:id "" :startTime 31 :endTime 60.5 :text "I said Bear is coming!!!!"}
+          {:id "" :startTime 61 :endTime 1200.5 :text "I said Bear is coming now!!!!"}]}
+
+  "cue-no-id"
+  {:cues [{:id "" :startTime 0 :endTime 30.5 :text "Bear is Coming!!!!!"}
+          {:id "" :startTime 31 :endTime 60.5 :text "I said Bear is coming!!!!"}
+          {:id "" :startTime 61 :endTime 1200.5 :text "I said Bear is coming now!!!!"}]}
+
+  "cue-no-id-error"
+  {:cues [{:id "" :startTime 0 :endTime 30.5 :text "Bear is Coming!!!!!"}
+          {:id "" :startTime 31 :endTime 60.5 :text "I said Bear is coming!!!!"}
+          {:id "" :startTime 61 :endTime 1200.5 :text "I said Bear is coming now!!!!"}]}
+
+  "cue-recovery-header"
+  {:cues [{:startTime 0 :endTime 1 :text "Valid cue 1"}
+          {:startTime 2 :endTime 3 :text "Valid cue 2"}]}
+
+  "cue-recovery-note"
+  {:cues [{:startTime 0 :endTime 1 :text "Valid cue 1"}
+          {:startTime 2 :endTime 3 :text "Valid cue 2"}]}
+
+  "cue-recovery-cuetext"
+  {:cues [{:startTime 0 :endTime 1 :text "Valid cue 1"}
+          {:startTime 2 :endTime 3 :text "Valid cue 2"}]}
+
+  "cue-size-align"
+  {:cues [{:size 100 :align "start"} {:size 10 :align "end"} {:size 0 :align "center"}]}
+
+  "cue-size-align-bad"
+  {:cues [{:size 100 :align "center"} {:size 100 :align "end"} {:size 100 :align "center"}]}
+
+  "cue-size"
+  {:cues [{:size 100} {:size 10} {:size 0}]}
+
+  "cue-size-bad"
+  {:cues [{:size 100} {:size 100} {:size 100}]}
+
+  "degenerate-cues"
+  {:cues [{:startTime 0 :endTime 1 :text ""}
+          {:startTime 2 :endTime 3 :text ""}
+          {:startTime 4 :endTime 5 :text ""}]}
+
+  "empty-cue"
+  {:count 3}
+
+  ;; the strings hold their characters as they are: before the period of
+  ;; the marks and of the space are U+200E, U+200F and U+00A0
+  "entities"
+  {:text-content ["This cue has an ampersand & character."
+                  "This cue has a less than < character."
+                  "This cue has a greater than > character."
+                  "This cue has a Left-to-Right Mark ‎."
+                  "This cue has a Right-to-Left Mark ‏."
+                  "This cue has a non-breaking space  ."
+                  "This & is parsed to the same as &."]}
+
+  "entities-wrong"
+  {:text-content ["This cue has a less than "
+                  "This cue has a greater than > character.\nSince it's not related to a < character,\nit's just interpreted as text."]}
+
+  "header-empty-after"    {:cues []}
+  "header-newlines-after" {:cues []}
+  "header-too-short"      nil
+  "header-invalid-equal"  nil
+
+  "default-styles"
+  {:cues [{:id "1" :startTime 0 :endTime 30.5 :text "Bear is Coming!!!!!"}
+          {:id "2" :startTime 31 :endTime 1200.5 :text "I said Bear is coming!!!!"}]}
+
+  "metadata-area"
+  {:cues [{:id "1" :startTime 0 :endTime 30.5 :text "Bear is Coming!!!!!"}
+          {:id "2" :startTime 31 :endTime 1200.5 :text "I said Bear is coming!!!!"}]}
+
+  "interspersed-non-cue"
+  {:cues [{:text "First"} {:text "Second"}]}
+
+  "line-position"
+  {:cues [{:line 0 :snapToLines false}
+          {:line 0 :snapToLines true}
+          {:line 50 :snapToLines false}
+          {:line 5 :snapToLines true}
+          {:line 100 :snapToLines false}
+          {:line -1 :snapToLines true}
+          {:line 500 :snapToLines true}]}
+
+  "line-position-bad"
+  {:cues [{:line "auto" :snapToLines true}
+          {:line "auto" :snapToLines true}
+          {:line "auto" :snapToLines true}
+          {:line "auto" :snapToLines true}
+          {:line "auto" :snapToLines true}]}
+
+  "webvtt-file"
+  {:cues [{:id "1" :startTime 0 :endTime 30.5 :text "Bear is Coming!!!!!"}
+          {:id "2" :startTime 31 :endTime 1200.5 :text "I said Bear is coming!!!!"}]}
+
+  "webvtt-rubbish"
+  {:cues [{:id "1" :startTime 0 :endTime 30.5 :text "Bear is Coming!!!!!"}
+          {:id "2" :startTime 31 :endTime 1200.5 :text "I said Bear is coming!!!!"}]}
+
+  "no-webvtt" nil
+
+  "markup"
+  {:fragments [["The following bear is bold:\n" [:b {} "Bear"] " is Coming!!!!!"]
+               ["The following bear is in italics and has a class of \"larger\":\n"
+                [:i {:class "larger"} "Bear"] " is Coming!!!!!"]
+               ["The following bear is underlined even though the element has a blank:\nI said "
+                [:u {} "Bear"] " is coming!!!!"]
+               ["The following bear is ruby annotated:\nI said "
+                [:ruby {} "Bear" [:rt {} "bear with me"]] " is coming!!!!"]]}
+
+  "markup-bad"
+  {:fragments [["The following bear starts bold but end is broken:\n"
+                [:b {} "Bear" " is Coming!!!!!"]]
+               ["The following bear is not in italics but the markup is removed:\n"
+                "Bear" " is Coming!!!!!"]
+               ["The following bear is not underlined and markup is removed:\nI said "
+                "Bear" " is coming!!!!"]
+               ["The following bear is not ruby annotated and markup is removed:\nI said "
+                "Bear" "bear with me" " is coming!!!!"]]}
+
+  "no-newline-at-eof"
+  {:cues [{:id "1" :startTime 0 :endTime 30.5 :text "Bear is Coming!!!!!"}]}
+
+  "no-timings"
+  {:cues []}
+
+  "positioning"
+  {:cues [{:position 0} {:position 50} {:position "auto"} {:position 100}]}
+
+  "positioning-ltr"
+  {:cues [{:position 0} {:position 50} {:position "auto"} {:position 100}]}
+
+  "positioning-bad"
+  {:cues [{:position "auto"} {:position "auto"} {:position "auto"} {:position "auto"}
+          {:position "auto"} {:position "auto"} {:position "auto"} {:position "auto"}]}
+
+  "settings"
+  {:cues [{:line 100 :position "auto" :align "start" :vertical ""}
+          {:line 15 :position 40 :align "center" :vertical "rl"}
+          {:line "auto" :position 10 :align "center" :vertical ""}
+          {:line 95 :position "auto" :align "end" :vertical "lr"}]}
+
+  "settings-bad-separation"
+  {:cues [{:line 43 :position 10 :align "center" :vertical ""}
+          {:line "auto" :position 50 :align "end" :vertical ""}
+          {:line "auto" :position "auto" :align "center" :vertical ""}
+          {:line "auto" :position 90 :align "center" :vertical "lr"}]}
+
+  "timestamp"
+  {:text-content ["This cue is painted on."
+                  "I said Bear is coming!!!!"
+                  "I said Bear is coming now!!!!"]}
+
+  "timestamp-bad"
+  {:text-content ["This cue is painted on.\nBut since the last two timestamps are out of order, they are ignored."
+                  "I said Bear is coming!!!!\nAll of these timestamps are before the start of the cue, so get ignored."
+                  "I said Bear is coming now!!!!\nAll of these timestamps are after the end of the cue, so get ignored."]}
+
+  "timings-hour"
+  {:cues [{:id "1" :startTime 0 :endTime 30.5 :text "Bear is Coming!!!!!"}
+          {:id "2" :startTime 31 :endTime 60.5 :text "I said Bear is coming!!!!"}
+          {:id "3" :startTime 61 :endTime 361200.5 :text "I said Bear is coming now!!!!"}]}
+
+  "timings-hour-error"
+  {:cues []}
+
+  "timings-no-hour"
+  {:cues [{:id "1" :startTime 0 :endTime 30.5 :text "Bear is Coming!!!!!"}
+          {:id "2" :startTime 31 :endTime 60.5 :text "I said Bear is coming!!!!"}
+          {:id "3" :startTime 61 :endTime 120.5 :text "I said Bear is coming now!!!!"}
+          {:id "4" :startTime 121 :endTime 180.5 :text "tab separators"}]}
+
+  "timings-no-hour-errors"
+  {:cues []}
+
+  "timings-whitespace"
+  {:cues [{:id "1" :startTime 0.1 :endTime 1.5
+           :text "Single U+0020 SPACE left of cue-timings separator"}
+          {:id "2" :startTime 0.1 :endTime 1.5
+           :text "Single U+0020 SPACE right of cue-timings separator"}
+          {:id "3" :startTime 0.1 :endTime 1.5
+           :text "Single U+0009 TAB left of cue-timings separator"}
+          {:id "4" :startTime 0.1 :endTime 1.5
+           :text "Single U+0009 TAB right of cue-timings separator"}
+          {:id "5" :startTime 0.1 :endTime 1.5
+           :text "Single U+000C FORM FEED left of cue-timings separator"}
+          {:id "6" :startTime 0.1 :endTime 1.5
+           :text "Single U+000C FORM FEED right of cue-timings separator"}
+          {:id "7" :startTime 0.1 :endTime 1.5
+           :text "Several U+0020 SPACE left of cue-timings separator"}
+          {:id "8" :startTime 0.1 :endTime 1.5
+           :text "Several U+0020 SPACE right of cue-timings separator"}
+          {:id "9" :startTime 0.1 :endTime 1.5
+           :text "Several U+0009 TAB left of cue-timings separator"}
+          {:id "10" :startTime 0.1 :endTime 1.5
+           :text "Several U+0009 TAB right of cue-timings separator"}
+          {:id "11" :startTime 0.1 :endTime 1.5
+           :text "Several U+000C FORM FEED left of cue-timings separator"}
+          {:id "12" :startTime 0.1 :endTime 1.5
+           :text "Several U+000C FORM FEED right of cue-timings separator"}]}
+
+  "unsupported-markup"
+  {:text-content ["Bear is Coming!!!!!\nAnd what kind of a bear it is - just have look."
+                  "\n  I said Bear is coming!!!!\n  I said Bear is still coming!!!!\n"
+                  "\n  I said Bear is coming now!!!!\n  \n  \n"]
+   :cues [{:text "<h1>Bear is Coming!!!!!</h1>\n<p>And what kind of a bear it is - just have <a href=\"webpage.html\">look</a>.</p>"}
+          {:text "<ul>\n  <li>I said Bear is coming!!!!</li>\n  <li>I said Bear is still coming!!!!</li>\n</ul>"}
+          {:text "<ol>\n  <li>I said Bear is coming now!!!!</li>\n  <li><img src=\"bear.png\" alt=\"mighty bear\"></li>\n  <li><video src=\"bear_ad.webm\" controls></video></li>\n</ol>"}]}
+
+  "utf8"
+  {:cues [{:id "1" :startTime 0 :endTime 30.5 :text "景気判断"}
+          {:id "2" :startTime 31 :endTime 1200.5 :text "電力不足"}]}
+
+  ;; in ISO-2022-JP-3, which a WebVTT parser decodes as UTF-8 anyway
+  "iso2022jp3"
+  {:count 2}
+
+  "valign"
+  {:cues [{:vertical "rl" :align "center" :position "auto"}
+          {:vertical "lr" :align "center" :position "auto"}
+          {:vertical "rl" :align "start" :position 0}]}
+
+  "valign-ltr"
+  {:cues [{:vertical "rl" :align "center" :position "auto"}
+          {:vertical "lr" :align "center" :position "auto"}
+          {:vertical "rl" :align "start" :position 0}]}
+
+  "valign-bad"
+  {:cues [{:vertical ""} {:vertical ""} {:vertical ""}]}
+
+  "voice"
+  {:fragments [[[:span {:class "blue" :title "Speaker"} "Bear is Coming!!!!!"]
+                "\nText span with a class and an annotation."]
+               [[:span {:title "Doe Hunter"} "I said Bear is coming!!!!"]]
+               ["I said " [:span {:class "blue" :title "Speaker"} "Bear is coming now"] "!!!!"]]}
+
+  "voice-bad"
+  {:fragments [["Bear is Coming!!!!!" "\nThis is two annotations for an empty tag."]
+               ["I said Bear is coming!!!!" "\nThis does not parse as a voice tag."]
+               ["I said " "Bear is coming now" "!!!!\nThis does not parse as a voice tag."]]}}}
