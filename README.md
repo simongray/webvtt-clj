@@ -22,7 +22,10 @@ for a `<track>` element. It writes files too.
 - **The same results everywhere.** One codebase runs on the JVM, in Node
   and in browsers. None of them has a WebVTT parser that you can call.
 
-> This library was developed with assistance from frontier LLMs.
+> This library was spun out of [podcast-clj](https://github.com/simongray/podcast-clj),
+> a library for making podcast software, which uses it to read and write
+> transcripts. Like podcast-clj, it was developed with assistance from
+> frontier LLMs.
 
 Getting started
 ---------------
